@@ -5,6 +5,10 @@ python .\train.py --batch-size 36 --epochs 100 --data D:\Debug-Conda\yolov5\data
 python .\detect.py --source D:\GitCode\yolo5-me\images_delect\96.png --weights D:\GitCode\yolo5-me\pts\2023-4-5-2.pt   --device 0 --save-txt
 
 """
+import torch
+print(torch.__version__)
+print(torch.cuda.is_available())
+print("-"*50)
 import win32api
 import win32con
 

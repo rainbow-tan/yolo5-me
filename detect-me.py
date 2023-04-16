@@ -1,6 +1,3 @@
-# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
-
-
 import os
 import sys
 from pathlib import Path
@@ -24,8 +21,8 @@ from utils.torch_utils import smart_inference_mode
 
 @smart_inference_mode()
 def run(
-        weights=r'D:\GitCode\yolo5-me\pts\2023-4-5-2.pt',  # model path or triton URL
-        source=r'D:\GitCode\yolo5-me\images_delect\1.png',  # file/dir/URL/glob/screen/0(webcam)
+        weights=r'./pts/2023-4-5-2.pt',  # model path or triton URL
+        source=r'./images_delect/1.png',  # file/dir/URL/glob/screen/0(webcam)
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
         conf_thres=0.25,  # confidence threshold
