@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from tkinter import Tk, Frame, Label
 
 import win32api
 import win32con
@@ -24,16 +25,38 @@ from utils.augmentations import letterbox
 
 
 class Mine:
+    bg = 'yellow'
+    fg = 'red'
+    left = 'left'
+    font_name = '黑体'
+    font_size = 16  # 字体大小
+    font_choose = 'bold'
+
     def __init__(self, pt_path="./pts/2023-4-5-2.pt"):
         self.pt_path = pt_path
         self.executor = ThreadPoolExecutor(max_workers=5)  # 初始化线程池
-        self.model = self.__load_mode()  # 加载模型
+        self.model = self.__load_mode()  # 加载模型 todo 测试后恢复
 
         self.camera = dxcam.create()
         self.__start_camera()  # 启动截图
         self.screen_width = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)  # 获得屏幕分辨率X轴
 
         self.screen_height = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)  # 获得屏幕分辨率Y轴
+
+        self.win = self.create_win()
+
+        self.switch = False
+        self.switch_label = self.__pack_switch_label()
+
+        self.people_x = None
+        self.people_y = None
+        self.people_label = self.__pack_people_label()
+
+    def __show_switch(self):
+        return f"开启状态:{'开启' if self.switch else '关闭'}"
+
+    def __show_people(self):
+        return f"人物位置:({self.people_x},{self.people_y})"
 
     def __start_camera(self):
         self.camera.start()
@@ -43,10 +66,12 @@ class Mine:
         print("开始识别")
         while True:
             img = self.camera.get_latest_frame()
-            # print(img)
             x, y = self.__detection_target(img, self.model)
             if x and y:
-                print(f"x,y:{x},{y}")
+                # print(f"x,y:{x},{y}")
+                self.people_x = x
+                self.people_y = y
+                self.people_label.config(text=self.__show_people())
 
     def identity(self):
         self.executor.submit(self.__identity)
@@ -124,17 +149,56 @@ class Mine:
             return x, y
         return None, None
 
+    def create_win(self):
+        win = Tk()
+        width = 1200  # tkinter宽度
+        distance_middle = 300  # 中间偏右多少
+        x = int((self.screen_width - width) / 2) + distance_middle
+        win.geometry(f'{width}x30+{x}+0')  # 设置宽度300,高度300,距离左上角x轴距离为500,y轴距离为100
+        win.attributes('-alpha', 0.3)  # 设置透明度,数值是0-1之间的小数,包含0和1
+        win.attributes("-fullscreen", False)  # 设置全屏
+        win.attributes("-topmost", True)  # 设置窗体置于最顶层
+        win.update()  # 刷新窗口,否则获取的宽度和高度不准
+        win.overrideredirect(True)  # 去除窗口边框
+        return win
 
-    def my_tk(self):
-        pass
+    def start_win(self):
+        self.win.mainloop()
+
+    def __pack_switch_label(self):
+        win = self.win
+        frame = Frame(win, bg=self.bg)
+        frame.pack(fill='both', side=self.left)
+        label = Label(
+            master=win,  # 父容器
+            text=self.__show_switch(),  # 文本
+            bg=self.bg,  # 背景颜色
+            fg=self.fg,  # 文本颜色
+            font=(self.font_name, self.font_size, self.font_choose),
+        )
+        label.pack(side=self.left)
+        return label
+
+    def __pack_people_label(self):
+        win = self.win
+        frame = Frame(win, bg=self.bg)
+        frame.pack(fill='both', side=self.left)
+        label = Label(
+            master=win,  # 父容器
+            text=self.__show_people(),  # 文本
+            bg=self.bg,  # 背景颜色
+            fg=self.fg,  # 文本颜色
+            font=(self.font_name, self.font_size, self.font_choose),
+        )
+        label.pack(side=self.left)
+        return label
+
 
 def main():
     me = Mine()
-
     me.identity()
-    # me.executor.submit(me.get_img_by_camera, )
+    me.start_win()
     print("结束")
-    # time.sleep(10)
 
 
 if __name__ == '__main__':
