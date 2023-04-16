@@ -1,3 +1,4 @@
+import ctypes
 import os
 import sys
 from pathlib import Path
@@ -5,7 +6,8 @@ from tkinter import Tk, Frame, Label
 
 import win32api
 import win32con
-from pynput import keyboard
+from pynput import keyboard, mouse
+from pynput.mouse import Button
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -33,16 +35,21 @@ class Mine:
     font_size = 16  # 字体大小
     font_choose = 'bold'
 
+    screen_width = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)  # 获得屏幕分辨率X轴
+    screen_height = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)  # 获得屏幕分辨率Y轴
+
     def __init__(self, pt_path="./pts/2023-4-5-2.pt"):
         self.pt_path = pt_path
+
         self.executor = ThreadPoolExecutor(max_workers=5)  # 初始化线程池
         self.model = self.__load_mode()  # 加载模型 todo 测试后恢复
 
+        self.lib = None
+        self.handler = None
+        self.lib, self.handler = self.load_usb()
+
         self.camera = dxcam.create()
         self.__start_camera()  # 启动截图
-        self.screen_width = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)  # 获得屏幕分辨率X轴
-
-        self.screen_height = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)  # 获得屏幕分辨率Y轴
 
         self.win = self.create_win()
 
@@ -54,6 +61,25 @@ class Mine:
         self.people_label = self.__pack_people_label()
 
         self.listener_keyboard()  # 监听键盘事件
+        self.listener_mouse()#监听鼠标事件
+
+    def load_usb(self):
+        path = "box64.dll"
+        path = os.path.join(os.path.dirname(__file__), path)
+        lib = ctypes.windll.LoadLibrary(path)
+
+        lib.M_Open.restype = ctypes.c_uint64
+        ret = lib.M_Open(1)
+        if ret in [-1, 18446744073709551615]:
+            print('未检测到 USB 芯片!')
+            os._exit(0)
+        handler = ctypes.c_uint64(ret)
+        result = lib.M_ResolutionUsed(handler, self.screen_width, self.screen_height)
+        if result != 0:
+            print('设置分辨率失败!')
+            os._exit(0)
+        print("加载USB成功!!!")
+        return lib, handler
 
     def __show_switch(self):
         return f"开启状态:{'开启' if self.switch else '关闭'}"
@@ -212,6 +238,31 @@ class Mine:
 
     def listener_keyboard(self):
         self.executor.submit(self.__listener_keyboard)
+    def __listener_mouse(self):
+        listener = mouse.Listener(on_click=self.mouse_click)
+        listener.start()
+        listener.join()
+
+    def mouse_click(self,x, y, button: Button, pressed):
+        """
+        鼠标点击事件
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param button: 按钮枚举对象 Button.left 鼠标左键 Button.right 鼠标右键 Button.middle 鼠标中键
+        :param pressed: 按下或者是释放,按下是True释放是False
+        :return:
+        """
+        if pressed and button == Button.left:
+            # print("鼠标左键按下")
+            pass
+
+        elif not pressed and button == Button.left:
+            # print("鼠标左键释放")
+            pass
+
+
+    def listener_mouse(self):
+        self.executor.submit(self.__listener_mouse)
 
 
 def main():
