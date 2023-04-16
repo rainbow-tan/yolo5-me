@@ -255,3 +255,8 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
+##############
+images
+images_delect
+labels
+pts
