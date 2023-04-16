@@ -1,6 +1,7 @@
 import ctypes
 import os
 import sys
+import time
 from pathlib import Path
 from tkinter import Tk, Frame, Label
 
@@ -39,6 +40,7 @@ class Mine:
     screen_height = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)  # 获得屏幕分辨率Y轴
 
     def __init__(self, pt_path="./pts/2023-4-5-2.pt"):
+        self.mouse_left_down = False
         self.pt_path = pt_path
 
         self.executor = ThreadPoolExecutor(max_workers=5)  # 初始化线程池
@@ -53,7 +55,7 @@ class Mine:
 
         self.win = self.create_win()
 
-        self.switch = False
+        self.switch = True
         self.switch_label = self.__pack_switch_label()
 
         self.people_x = None
@@ -101,6 +103,10 @@ class Mine:
                 self.people_x = x
                 self.people_y = y
                 self.people_label.config(text=self.__show_people())
+                # if self.mouse_left_down==True:
+                #     print("应该压枪")
+                #     self.lib.M_MoveTo3(self.handler, self.people_x, self.people_y)
+
 
     def identity(self):
         self.executor.submit(self.__identity)
@@ -243,6 +249,21 @@ class Mine:
         listener.start()
         listener.join()
 
+    def __move_mouse(self):
+        while True:
+            # print("===")
+            if self.switch and self.mouse_left_down and self.people_x and self.people_y:
+                while self.mouse_left_down:
+                    self.lib.M_MoveTo3(self.handler, self.people_x, self.people_y)
+                    print("移动至目标")
+            else:
+                # print("睡眠")
+                time.sleep(0.2)
+
+    def move_mouse(self):
+        self.executor.submit(self.__move_mouse,)
+
+
     def mouse_click(self,x, y, button: Button, pressed):
         """
         鼠标点击事件
@@ -252,12 +273,30 @@ class Mine:
         :param pressed: 按下或者是释放,按下是True释放是False
         :return:
         """
+        """
+        LIB.M_MoveR2(HANDLER, x, y_pixel) #相对当前位置移动
+        
+        """
         if pressed and button == Button.left:
             # print("鼠标左键按下")
-            pass
+            if self.switch and self.people_x and self.people_y:
+                self.mouse_left_down =True
+                # print('self.mouse_left_down =True')
+                # for i in range(10):
+                #     self.lib.M_MoveTo3(self.handler,self.people_x,self.people_y)
+                #     time.sleep(0.5)
+                # print(f"移动鼠标到:{self.people_x},{self.people_y}")
+                # print(x)
+                # print(y)
+                # print(x-self.people_x)
+                # print(y-self.people_y)
+                # self.lib.M_MoveR2(self.handler, x-self.people_x, y-self.people_y)#LIB.M_MoveR2(HANDLER, x, y_pixel) 相对当前位置移动
+
 
         elif not pressed and button == Button.left:
             # print("鼠标左键释放")
+            self.mouse_left_down = False
+            # print('self.mouse_left_down =True')
             pass
 
 
@@ -268,6 +307,7 @@ class Mine:
 def main():
     me = Mine()
     me.identity()
+    me.move_mouse()
     me.start_win()
     print("结束")
 
