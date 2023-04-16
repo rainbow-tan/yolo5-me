@@ -5,6 +5,7 @@ from tkinter import Tk, Frame, Label
 
 import win32api
 import win32con
+from pynput import keyboard
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -52,6 +53,8 @@ class Mine:
         self.people_y = None
         self.people_label = self.__pack_people_label()
 
+        self.listener_keyboard()  # 监听键盘事件
+
     def __show_switch(self):
         return f"开启状态:{'开启' if self.switch else '关闭'}"
 
@@ -86,6 +89,7 @@ class Mine:
 
     def stop_camera(self):
         self.camera.stop()
+        print("camera stopped")
 
     def __detection_target(self,
                            array,  # file/dir/URL/glob/screen/0(webcam)
@@ -192,6 +196,22 @@ class Mine:
         )
         label.pack(side=self.left)
         return label
+
+    def keyboard_press(self, key):
+        if hasattr(key, 'vk') and key.vk == 97:  # 小键盘1
+            self.switch = not self.switch
+            self.switch_label.config(text=self.__show_switch())
+        elif hasattr(key, 'vk') and key.vk == 103:  # 小键盘7
+            self.stop_camera()
+            os._exit(0)  # 强制所有线程都退出
+
+    def __listener_keyboard(self):
+        listener = keyboard.Listener(on_press=self.keyboard_press)
+        listener.start()
+        listener.join()
+
+    def listener_keyboard(self):
+        self.executor.submit(self.__listener_keyboard)
 
 
 def main():
